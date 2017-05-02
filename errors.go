@@ -25,6 +25,14 @@ func Errorc(ctx map[string]interface{}, msg string) error {
 	}
 }
 
+// Errorf returns an error with the provided format specifier.
+func Errorf(format string, args ...interface{}) error {
+	return &Error{
+		Message: fmt.Sprintf(format, args...),
+		Stack:   callers(),
+	}
+}
+
 // Errorcf returns an error with contextual information and the provided format specifier.
 func Errorcf(ctx map[string]interface{}, format string, args ...interface{}) error {
 	return &Error{
@@ -53,6 +61,15 @@ func Wrapc(err error, ctx map[string]interface{}, msg string) error {
 	}
 }
 
+// Wrapf returns an error wrapping err and adding the provided format specifier.
+func Wrapf(err error, format string, args ...interface{}) error {
+	return &Error{
+		Message: fmt.Sprintf(format, args...),
+		Stack:   callers(),
+		Cause:   err,
+	}
+}
+
 // Wrapcf returns an error wrapping err, adding contextual information and the provided format specifier.
 func Wrapcf(err error, ctx map[string]interface{}, format string, args ...interface{}) error {
 	return &Error{
@@ -63,7 +80,7 @@ func Wrapcf(err error, ctx map[string]interface{}, format string, args ...interf
 	}
 }
 
-// Stack is an array of program counters that implements fmt.Stringer. Invoke String() in order to obtain a string with the stack trace.
+// Stack is an array of program counters that implements fmt.Stringer. Call String() in order to obtain a string with the stack trace.
 type Stack []uintptr
 
 func (s *Stack) String() string {
