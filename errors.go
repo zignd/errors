@@ -2,6 +2,7 @@ package errors
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"runtime"
 )
@@ -97,6 +98,13 @@ func (s *Stack) String() string {
 		}
 	}
 	return b.String()
+}
+
+// MarshalJSON implements the MarshalJSON interface so that the Stack gets converted into a nice looking string containing the stack trace.
+func (s *Stack) MarshalJSON() ([]byte, error) {
+	var b bytes.Buffer
+	json.NewEncoder(&b).Encode(s.String())
+	return []byte(b.String()), nil
 }
 
 // Error is the error struct used internally by the package. This type should only be used for type assertions.
