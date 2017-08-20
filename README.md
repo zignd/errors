@@ -16,62 +16,59 @@ For a better understanding of the features provided by the package check the doc
 
 # Quick demo
 
-    package main
+**Consider the following usages of the package in the functions defined below**
 
-    import (
-        "encoding/json"
-        "fmt"
+```go
+package main
 
-        "github.com/zignd/errors"
-    )
+import (
+	"encoding/json"
+	"fmt"
 
-    func main() {
-        if err := foo(); err != nil {
-            // Type assertions using the exposed Error type
-            if err, ok := err.(*errors.Error); ok {
-                // JSON marshalling is supported
-                b, _ := json.MarshalIndent(err, "", "\t")
-                fmt.Printf("%s", b)
+	"github.com/zignd/errors"
+)
 
-                fmt.Printf("\n\n-----------------\n\n")
+func foo() error {
+	model := "iop-40392"
 
-                // fmt.Formatter implementation supporting the '+v' format for recursive pretty print of the whole Error value
-                fmt.Printf("%+v", err)
+	if err := launch(model); err != nil {
+		return errors.Wrapc(err, map[string]interface{}{
+			"model": model,
+		}, "failed to launch rocket")
+	}
 
-                fmt.Printf("\n\n-----------------\n\n")
+	return nil
+}
 
-                // And the 's' format for the usual priting of error values
-                fmt.Printf("%s", err)
-            }
-        }
-        fmt.Println("done")
-    }
+func launch(model string) error {
+	return errors.Errorc(map[string]interface{}{
+		"rocket": map[string]interface{}{
+			"ID":        "123",
+			"Fuel":      10,
+			"AutoPilot": true,
+		},
+	}, "something catastrofic just happened to rocket #123")
+}
+```
 
-    func foo() error {
-        model := "iop-40392"
+**JSON marshalling an error value**
 
-        if err := launch(model); err != nil {
-            return errors.Wrapc(err, map[string]interface{}{
-                "model": model,
-            }, "failed to launch rocket")
-        }
+```go
+func main() {
+	if err := foo(); err != nil {
+		// Type assertions using the exposed Error type
+		if err, ok := err.(*errors.Error); ok {
+			b, _ := json.MarshalIndent(err, "", "\t")
+			fmt.Printf("%s", b)
+		}
+	}
+}
+```
 
-        return nil
-    }
+**Output**
 
-    func launch(model string) error {
-        return errors.Errorc(map[string]interface{}{
-            "rocket": map[string]interface{}{
-                "ID":        "123",
-                "Fuel":      10,
-                "AutoPilot": true,
-            },
-        }, "something catastrofic just happened to rocket #123")
-    }
-
-Output:
-
-    {
+```
+{
         "Message": "failed to launch rocket",
         "Context": {
             "model": "iop-40392"
@@ -90,9 +87,23 @@ Output:
             "Cause": null
         }
     }
+```
 
-    -----------------
+**`fmt.Formatter` implementation supporting the `+v` format for recursive pretty print of the whole error value**
 
+```go
+func main() {
+	if err := foo(); err != nil {
+		if err, ok := err.(*errors.Error); ok {
+			fmt.Printf("%+v", err)
+		}
+	}
+}
+```
+
+**Output**
+
+```
     Message:
         "failed to launch rocket"
     Context:
@@ -122,7 +133,22 @@ Output:
                 /usr/local/go/src/runtime/proc.go:194
             runtime.goexit
                 /usr/local/go/src/runtime/asm_amd64.s:2198
+```
 
-    -----------------
+**The usual `%s` format support**
 
-    failed to launch rocket: something catastrofic just happened to rocket #123done
+```go
+func main() {
+	if err := foo(); err != nil {
+		if err, ok := err.(*errors.Error); ok {
+			// And the 's' format for the usual priting of error values
+			fmt.Printf("%s", err)
+		}
+	}
+}
+```
+**Output**
+
+```
+failed to launch rocket: something catastrofic just happened to rocket #123done
+```
