@@ -141,7 +141,6 @@ func main() {
 func main() {
 	if err := foo(); err != nil {
 		if err, ok := err.(*errors.Error); ok {
-			// And the 's' format for the usual priting of error values
 			fmt.Printf("%s", err)
 		}
 	}
@@ -150,5 +149,5 @@ func main() {
 **Output**
 
 ```
-failed to launch rocket: something catastrofic just happened to rocket #123done
+failed to launch rocket: something catastrofic just happened to rocket #123
 ```
