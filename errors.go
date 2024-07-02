@@ -1,11 +1,8 @@
 package errors
 
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"runtime"
-)
+import "fmt"
+
+type Data map[string]any
 
 // New returns an error with the provided message.
 func New(msg string) error {
@@ -15,28 +12,28 @@ func New(msg string) error {
 	}
 }
 
-// Errorc returns an error with contextual information and the provided message.
-func Errorc(ctx map[string]interface{}, msg string) error {
+// Errord returns an error with additional data and the provided message.
+func Errord(data Data, msg string) error {
 	return &Error{
 		Message: msg,
-		Context: ctx,
+		Data:    data,
 		Stack:   callers(),
 	}
 }
 
 // Errorf returns an error with the provided format specifier.
-func Errorf(format string, args ...interface{}) error {
+func Errorf(format string, args ...any) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
 		Stack:   callers(),
 	}
 }
 
-// Errorcf returns an error with contextual information and the provided format specifier.
-func Errorcf(ctx map[string]interface{}, format string, args ...interface{}) error {
+// Errordf returns an error with additional data and the provided format specifier.
+func Errordf(data Data, format string, args ...any) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
-		Context: ctx,
+		Data:    data,
 		Stack:   callers(),
 	}
 }
@@ -50,18 +47,18 @@ func Wrap(err error, msg string) error {
 	}
 }
 
-// Wrapc returns an error wrapping err, adding contextual information and the provided message.
-func Wrapc(err error, ctx map[string]interface{}, msg string) error {
+// Wrapd returns an error wrapping err, adding additional data and the provided message.
+func Wrapd(err error, data Data, msg string) error {
 	return &Error{
 		Message: msg,
-		Context: ctx,
+		Data:    data,
 		Stack:   callers(),
 		Cause:   err,
 	}
 }
 
 // Wrapf returns an error wrapping err and adding the provided format specifier.
-func Wrapf(err error, format string, args ...interface{}) error {
+func Wrapf(err error, format string, args ...any) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
 		Stack:   callers(),
@@ -69,65 +66,12 @@ func Wrapf(err error, format string, args ...interface{}) error {
 	}
 }
 
-// Wrapcf returns an error wrapping err, adding contextual information and the provided format specifier.
-func Wrapcf(err error, ctx map[string]interface{}, format string, args ...interface{}) error {
+// Wrapdf returns an error wrapping err, adding additional data and the provided format specifier.
+func Wrapdf(err error, data Data, format string, args ...any) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
-		Context: ctx,
+		Data:    data,
 		Stack:   callers(),
 		Cause:   err,
-	}
-}
-
-// Stack is an array of program counters that implements fmt.Stringer. Call String() in order to obtain a string with the stack trace.
-type Stack []uintptr
-
-func (s *Stack) String() string {
-	var b bytes.Buffer
-	for i := 0; i < len(*s); i++ {
-		if i != 0 {
-			b.WriteString("\n")
-		}
-		pc := (*s)[i]
-		fn := runtime.FuncForPC(pc)
-		if fn == nil {
-			b.WriteString("unknown")
-		} else {
-			file, line := fn.FileLine(pc)
-			b.WriteString(fmt.Sprintf("%s\n\t%s:%d", fn.Name(), file, line))
-		}
-	}
-	return b.String()
-}
-
-// MarshalJSON implements the MarshalJSON interface so that the Stack gets converted into a nice looking string containing the stack trace.
-func (s *Stack) MarshalJSON() ([]byte, error) {
-	var b bytes.Buffer
-	json.NewEncoder(&b).Encode(s.String())
-	return []byte(b.String()), nil
-}
-
-// Error is the error struct used internally by the package. This type should only be used for type assertions.
-type Error struct {
-	Message string
-	Context map[string]interface{}
-	Stack   *Stack
-	Cause   error
-}
-
-func (e Error) Error() string {
-	if e.Cause != nil {
-		return fmt.Sprintf("%s: %s", e.Message, e.Cause.Error())
-	}
-
-	return e.Message
-}
-
-// Format implements fmt.Formatter. It only accepts the '+v' and 's' formats.
-func (e Error) Format(s fmt.State, verb rune) {
-	if verb == 'v' && s.Flag('+') {
-		fmt.Fprintf(s, "%s", format(e, 0))
-	} else {
-		fmt.Fprintf(s, "%s", e.Error())
 	}
 }

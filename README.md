@@ -1,14 +1,20 @@
 # errors [![GoDoc](https://godoc.org/github.com/zignd/errors?status.svg)](https://godoc.org/github.com/zignd/errors) [![Report card](https://goreportcard.com/badge/github.com/zignd/errors)](https://goreportcard.com/report/github.com/zignd/errors)     
 
-An errors package that will help you handle them gracefully. It allows you to add contextual information to your errors, to wrap them and they even get a stack trace. Inspired by the [github.com/pkg/errors](https://www.github.com/pkg/errors) package and Node.js' [verror](https://github.com/joyent/node-verror) module.
+An errors package that will help you handle them gracefully. It allows you to add additional data to your errors, to wrap it and you even get a stack trace. Inspired by the [github.com/pkg/errors](https://www.github.com/pkg/errors) package and Node.js' [verror](https://github.com/joyent/node-verror) module.
 
 # Features
 
-* Add contextual information to error values preventing long and hard to read error messages
+* Add additional data to error values preventing long and hard to read error messages
 * Wrap existing error values into new ones
-* Stack traces
+* Stack traces for each error value
 * MultiError, wrap multiple errors values into a single one; great for concurrent workflows that may generate multiple errors
 * Pretty print of the whole error value and support JSON marshalling to ease the serialization (check the ["Quick demo"](https://github.com/zignd/errors#quick-demo) section)
+
+# Installation
+
+```bash
+go get -u github.com/zignd/errors
+```
 
 # Documentation
 
@@ -16,7 +22,7 @@ For a better understanding of the features provided by the package check the doc
 
 # Quick demo
 
-**Consider the following usages of the package in the functions defined below**
+There's an example at `examples/example1/example1.go` that shows how to use the package. Here's the code for the example:
 
 ```go
 package main
@@ -28,126 +34,184 @@ import (
 	"github.com/zignd/errors"
 )
 
-func foo() error {
-	model := "iop-40392"
-
-	if err := launch(model); err != nil {
-		return errors.Wrapc(err, map[string]interface{}{
-			"model": model,
-		}, "failed to launch rocket")
+func createTransaction(id string) error {
+	bank := "bank_123456"
+	if err := updateDatabase(); err != nil {
+		return errors.Wrapdf(err, errors.Data{
+			"transactionId": id,
+			"userId":        "67890",
+		}, "failed to complete the transaction on %s", bank)
 	}
 
 	return nil
 }
 
-func launch(model string) error {
-	return errors.Errorc(map[string]interface{}{
-		"rocket": map[string]interface{}{
-			"ID":        "123",
-			"Fuel":      10,
-			"AutoPilot": true,
-		},
-	}, "something catastrofic just happened to rocket #123")
+func updateDatabase() error {
+	if err := createConnection(); err != nil {
+		return errors.Wrapd(err, errors.Data{
+			"tableName": "transactions",
+			"operation": "update",
+		}, "failed to update the database")
+	}
+
+	return nil
 }
-```
 
-**JSON marshalling an error value**
+func createConnection() error {
+	if err := open(); err != nil {
+		return errors.Wrapd(err, errors.Data{
+			"server":         "db-server-01",
+			"timeoutSeconds": 30,
+		}, "connection timeout")
+	}
 
-```go
+	return nil
+}
+
+func open() error {
+	return errors.Errord(errors.Data{
+		"network":  "internal",
+		"severity": "high",
+	}, "network instability detected")
+}
+
 func main() {
-	if err := foo(); err != nil {
-		// Type assertions using the exposed Error type
-		if err, ok := err.(*errors.Error); ok {
-			b, _ := json.MarshalIndent(err, "", "\t")
-			fmt.Printf("%s", b)
-		}
+	if err := createTransaction("tx_123456"); err != nil {
+		b, _ := json.MarshalIndent(err, "", "  ")
+		fmt.Println("Error logged as a JSON structure using the JSON.MarshalIndent:")
+		fmt.Printf("%s\n", b)
+
+		b, _ = json.Marshal(err)
+		fmt.Println("\nError logged as a JSON structure using the JSON.Marshal:")
+		fmt.Printf("%s\n", b)
+
+		fmt.Println("\nError logged using the s format specifier:")
+		fmt.Printf("%s\n", err)
+
+		fmt.Println("\nError logged using the +v format specifier:")
+		fmt.Printf("%+v\n", err)
 	}
 }
 ```
 
-**Output**
+Here's the execution of the example:
 
 ```
+$ go run examples/example1/example1.go
+Error logged as a JSON structure using the JSON.MarshalIndent:
 {
-        "Message": "failed to launch rocket",
-        "Context": {
-            "model": "iop-40392"
+  "message": "failed to complete the transaction on bank_123456",
+  "data": {
+    "transactionId": "tx_123456",
+    "userId": "67890"
+  },
+  "stack": [
+    "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13",
+    "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+    "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+    "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+  ],
+  "cause": {
+    "message": "failed to update the database",
+    "data": {
+      "operation": "update",
+      "tableName": "transactions"
+    },
+    "stack": [
+      "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24",
+      "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
+      "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+      "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+      "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+    ],
+    "cause": {
+      "message": "connection timeout",
+      "data": {
+        "server": "db-server-01",
+        "timeoutSeconds": 30
+      },
+      "stack": [
+        "main.createConnection @ /root/hack/errors/examples/example1/example1.go:35",
+        "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
+        "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
+        "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+        "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+        "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+      ],
+      "cause": {
+        "message": "network instability detected",
+        "data": {
+          "network": "internal",
+          "severity": "high"
         },
-        "Stack": "main.foo\n\t/home/zignd/go/src/github.com/zignd/test/main.go:38\nmain.main\n\t/home/zignd/go/src/github.com/zignd/test/main.go:11\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:194\nruntime.goexit\n\t/usr/local/go/src/runtime/asm_amd64.s:2198",
-        "Cause": {
-            "Message": "something catastrofic just happened to rocket #123",
-            "Context": {
-                "rocket": {
-                    "AutoPilot": true,
-                    "Fuel": 10,
-                    "ID": "123"
-                }
-            },
-            "Stack": "main.launch\n\t/home/zignd/go/src/github.com/zignd/test/main.go:51\nmain.foo\n\t/home/zignd/go/src/github.com/zignd/test/main.go:35\nmain.main\n\t/home/zignd/go/src/github.com/zignd/test/main.go:11\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:194\nruntime.goexit\n\t/usr/local/go/src/runtime/asm_amd64.s:2198",
-            "Cause": null
-        }
+        "stack": [
+          "main.open @ /root/hack/errors/examples/example1/example1.go:45",
+          "main.createConnection @ /root/hack/errors/examples/example1/example1.go:34",
+          "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
+          "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
+          "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+          "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+          "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+        ]
+      }
     }
-```
-
-**`fmt.Formatter` implementation supporting the `+v` format for recursive pretty print of the whole error value**
-
-```go
-func main() {
-	if err := foo(); err != nil {
-		if err, ok := err.(*errors.Error); ok {
-			fmt.Printf("%+v", err)
-		}
-	}
+  }
 }
-```
 
-**Output**
+Error logged as a JSON structure using the JSON.Marshal:
+{"message":"failed to complete the transaction on bank_123456","data":{"transactionId":"tx_123456","userId":"67890"},"stack":["main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"failed to update the database","data":{"operation":"update","tableName":"transactions"},"stack":["main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"connection timeout","data":{"server":"db-server-01","timeoutSeconds":30},"stack":["main.createConnection @ /root/hack/errors/examples/example1/example1.go:35","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"network instability detected","data":{"network":"internal","severity":"high"},"stack":["main.open @ /root/hack/errors/examples/example1/example1.go:45","main.createConnection @ /root/hack/errors/examples/example1/example1.go:34","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]}}}}
 
-```
-    Message:
-        "failed to launch rocket"
-    Context:
-        model: iop-40392
-    Stack:
-        main.foo
-            /home/zignd/go/src/github.com/zignd/test/main.go:38
-        main.main
-            /home/zignd/go/src/github.com/zignd/test/main.go:11
-        runtime.main
-            /usr/local/go/src/runtime/proc.go:194
-        runtime.goexit
-            /usr/local/go/src/runtime/asm_amd64.s:2198
-    Cause:
-        Message:
-            "something catastrofic just happened to rocket #123"
-        Context:
-            rocket: map[ID:123 Fuel:10 AutoPilot:true]
-        Stack:
-            main.launch
-                /home/zignd/go/src/github.com/zignd/test/main.go:51
-            main.foo
-                /home/zignd/go/src/github.com/zignd/test/main.go:35
-            main.main
-                /home/zignd/go/src/github.com/zignd/test/main.go:11
-            runtime.main
-                /usr/local/go/src/runtime/proc.go:194
-            runtime.goexit
-                /usr/local/go/src/runtime/asm_amd64.s:2198
-```
+Error logged using the s format specifier:
+failed to complete the transaction on bank_123456: failed to update the database: connection timeout: network instability detected
 
-**The usual `%s` format support**
-
-```go
-func main() {
-	if err := foo(); err != nil {
-		if err, ok := err.(*errors.Error); ok {
-			fmt.Printf("%s", err)
-		}
-	}
-}
-```
-**Output**
-
-```
-failed to launch rocket: something catastrofic just happened to rocket #123
+Error logged using the +v format specifier:
+message:
+        "failed to complete the transaction on bank_123456"
+data:
+        transactionId: tx_123456
+        userId: 67890
+stack:
+        main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13
+        main.main @ /root/hack/errors/examples/example1/example1.go:52
+        runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194
+        runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651
+cause:
+        message:
+                "failed to update the database"
+        data:
+                tableName: transactions
+                operation: update
+        stack:
+                main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24
+                main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12
+                main.main @ /root/hack/errors/examples/example1/example1.go:52
+                runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194
+                runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651
+        cause:
+                message:
+                        "connection timeout"
+                data:
+                        server: db-server-01
+                        timeoutSeconds: 30
+                stack:
+                        main.createConnection @ /root/hack/errors/examples/example1/example1.go:35
+                        main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23
+                        main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12
+                        main.main @ /root/hack/errors/examples/example1/example1.go:52
+                        runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194
+                        runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651
+                cause:
+                        message:
+                                "network instability detected"
+                        data:
+                                network: internal
+                                severity: high
+                        stack:
+                                main.open @ /root/hack/errors/examples/example1/example1.go:45
+                                main.createConnection @ /root/hack/errors/examples/example1/example1.go:34
+                                main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23
+                                main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12
+                                main.main @ /root/hack/errors/examples/example1/example1.go:52
+                                runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194
+                                runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651
 ```

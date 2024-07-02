@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"runtime"
 	"strings"
 )
 
+// format returns a formatted string representation of the error and its cause.
 func format(err error, lvl int) string {
 	t := reflect.TypeOf(err)
 	if t != reflect.TypeOf(Error{}) && t != reflect.TypeOf(&Error{}) {
@@ -23,27 +23,29 @@ func format(err error, lvl int) string {
 	}
 
 	var b bytes.Buffer
-	b.WriteString(fmt.Sprintf("Message:\n\t\"%s\"", e.Message))
+	b.WriteString(fmt.Sprintf("message:\n\t\"%s\"", e.Message))
 
-	if e.Context != nil {
-		b.WriteString("\nContext:")
-		for k, v := range e.Context {
+	if e.Data != nil {
+		b.WriteString("\ndata:")
+		for k, v := range e.Data {
 			b.WriteString(fmt.Sprintf("\n\t%s: %v", k, v))
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("\nStack:\n%s", indent(e.Stack.String(), 1)))
+	firstStackLine := e.Stack[0]
+	b.WriteString(fmt.Sprintf("\nstack:\n%s", indent(firstStackLine, 1)))
+	for i := 1; i < len(e.Stack); i++ {
+		b.WriteString(fmt.Sprintf("\n%s", indent(e.Stack[i], 1)))
+	}
+
 	if e.Cause != nil {
-		b.WriteString(fmt.Sprintf("\nCause:\n%s", format(e.Cause, 1)))
+		b.WriteString(fmt.Sprintf("\ncause:\n%s", format(e.Cause, 1)))
 	}
 
 	return indent(b.String(), lvl)
 }
 
-func formatCtx(ctx map[string]interface{}) string {
-	return fmt.Sprint(ctx)
-}
-
+// indent indents a string by the given number of times.
 func indent(s string, times int) string {
 	var indent bytes.Buffer
 	for i := 0; i < times; i++ {
@@ -57,12 +59,4 @@ func indent(s string, times int) string {
 	}
 
 	return strings.Join(nLines, "\n")
-}
-
-func callers() *Stack {
-	const depth = 32
-	var pcs [depth]uintptr
-	n := runtime.Callers(3, pcs[:])
-	var st Stack = pcs[0:n]
-	return &st
 }
