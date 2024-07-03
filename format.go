@@ -10,16 +10,16 @@ import (
 // format returns a formatted string representation of the error and its cause.
 func format(err error, lvl int) string {
 	t := reflect.TypeOf(err)
-	if t != reflect.TypeOf(Error{}) && t != reflect.TypeOf(&Error{}) {
+	if t != reflect.TypeOf(Err{}) && t != reflect.TypeOf(&Err{}) {
 		return fmt.Sprintf("\t%s", err.Error())
 	}
 
-	var e Error
+	var e Err
 	if t.Kind() == reflect.Ptr {
-		ep := err.(*Error)
+		ep := err.(*Err)
 		e = *ep
 	} else {
-		e = err.(Error)
+		e = err.(Err)
 	}
 
 	var b bytes.Buffer
@@ -32,10 +32,12 @@ func format(err error, lvl int) string {
 		}
 	}
 
-	firstStackLine := e.Stack[0]
-	b.WriteString(fmt.Sprintf("\nstack:\n%s", indent(firstStackLine, 1)))
-	for i := 1; i < len(e.Stack); i++ {
-		b.WriteString(fmt.Sprintf("\n%s", indent(e.Stack[i], 1)))
+	if e.Stack != nil && len(e.Stack) > 0 {
+		firstStackLine := e.Stack[0]
+		b.WriteString(fmt.Sprintf("\nstack:\n%s", indent(firstStackLine, 1)))
+		for i := 1; i < len(e.Stack); i++ {
+			b.WriteString(fmt.Sprintf("\n%s", indent(e.Stack[i], 1)))
+		}
 	}
 
 	if e.Cause != nil {

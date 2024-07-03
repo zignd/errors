@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -28,7 +29,7 @@ func TestErrorc(t *testing.T) {
 		return
 	}
 
-	if e := err.(*Error); !reflect.DeepEqual(e.Data, data) {
+	if e := err.(*Err); !reflect.DeepEqual(e.Data, data) {
 		t.Errorf(`wrong data, got %+v, expected %+v`, e.Data, data)
 		return
 	}
@@ -80,4 +81,37 @@ func TestWrapc(t *testing.T) {
 		t.Errorf(`wrong error message, got "%s", expected "%s"`, got, expected)
 		return
 	}
+}
+
+// CustomError is a custom error type composed with Err.
+type CustomError struct {
+	*Err
+}
+
+// NewCustomError returns a new CustomError and adds a stack trace.
+func NewCustomError(message string) error {
+	customError := CustomError{Err: &Err{Message: message}}
+	WithStack(customError.Err)
+	return customError
+}
+
+func TestWithStack(t *testing.T) {
+	t.Run("when WithStack is called on a custom error type composed with Err, it should add a stack trace", func(t *testing.T) {
+		err := NewCustomError("this is a custom error type with stack")
+
+		if err.(CustomError).Stack == nil {
+			t.Errorf(`expected stack to be not nil, got nil`)
+			return
+		}
+
+		outputStr := fmt.Sprintf("%+v", err)
+		if !strings.Contains(outputStr, "message:") {
+			t.Errorf(`expected "message:" to be in the output string, got %v`, outputStr)
+			return
+		}
+		if !strings.Contains(outputStr, "stack:") {
+			t.Errorf(`expected "stack:" to be in the output string, got %v`, outputStr)
+			return
+		}
+	})
 }
