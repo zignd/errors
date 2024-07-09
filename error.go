@@ -43,3 +43,16 @@ func WithStack(err error) error {
 		return err
 	}
 }
+
+// WithCause adds a cause to the provided error if it is an Err or *Err.
+func WithCause(err error, cause error) error {
+	if e, ok := err.(Err); ok {
+		e.Cause = cause
+		return e
+	} else if e, ok := err.(*Err); ok {
+		e.Cause = cause
+		return e
+	} else {
+		return err
+	}
+}

@@ -96,7 +96,7 @@ func NewCustomError(message string) error {
 }
 
 func TestWithStack(t *testing.T) {
-	t.Run("when WithStack is called on a custom error type composed with Err, it should add a stack trace", func(t *testing.T) {
+	t.Run("when WithStack is provided with an error of type Err, it should add a stack trace to the error", func(t *testing.T) {
 		err := NewCustomError("this is a custom error type with stack")
 
 		if err.(CustomError).Stack == nil {
@@ -112,6 +112,29 @@ func TestWithStack(t *testing.T) {
 		if !strings.Contains(outputStr, "stack:") {
 			t.Errorf(`expected "stack:" to be in the output string, got %v`, outputStr)
 			return
+		}
+	})
+}
+
+// CustomError2 is a custom error type composed with Err.
+type CustomError2 struct {
+	*Err
+}
+
+// NewCustom2Error returns a new CustomError2 and adds a cause to the error.
+func NewCustom2Error(message string, cause error) error {
+	customError2 := CustomError2{Err: &Err{Message: message}}
+	WithCause(customError2.Err, cause)
+	return customError2
+}
+
+func TestWithCause(t *testing.T) {
+	t.Run("when WithCause is provided with an error and a cause, it should add the cause to the error", func(t *testing.T) {
+		causeErr := New("inner error")
+		err := NewCustom2Error("outer error", causeErr)
+
+		if err.(CustomError2).Cause != causeErr {
+			t.Errorf(`expected cause to be %v, got %v`, causeErr, err.(CustomError2).Cause)
 		}
 	})
 }
