@@ -1,0 +1,75 @@
+package errors
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func TestJSONMarshaling(t *testing.T) {
+	t.Run("when marshaling a nested chain of errors.Err errors, should marshal the full chain", func(t *testing.T) {
+		err1 := New("context timeout")
+		err2 := Wrap(err1, "failed to connect to the database")
+		err3 := Wrap(err2, "failed to start the server")
+
+		b, err := json.MarshalIndent(err3, "", "  ")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var errs []map[string]any
+		err = json.Unmarshal(b, &errs)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if len(errs) != 3 {
+			t.Fatalf("unexpected number of errors, got %d, expected %d", len(errs), 3)
+		}
+
+		if fmt.Sprint(errs[0]["message"]) != err3.(*Err).Message {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[0]["message"], err3.(*Err).Message)
+		}
+
+		if fmt.Sprint(errs[1]["message"]) != err2.(*Err).Message {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[1]["message"], err2.(*Err).Message)
+		}
+
+		if fmt.Sprint(errs[2]["message"]) != err1.(*Err).Message {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[2]["message"], err1.(*Err).Message)
+		}
+	})
+
+	t.Run("when marshaling a chain of errors.Err and standard errors, should marshal the full chain", func(t *testing.T) {
+		err1 := New("context timeout")
+		err2 := fmt.Errorf("failed to connect to the database: %w", err1)
+		err3 := Wrap(err2, "failed to start the server")
+
+		b, err := json.MarshalIndent(err3, "", "  ")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var errs []map[string]any
+		err = json.Unmarshal(b, &errs)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if len(errs) != 3 {
+			t.Fatalf("unexpected number of errors, got %d, expected %d", len(errs), 3)
+		}
+
+		if fmt.Sprint(errs[0]["message"]) != err3.(*Err).Message {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[0]["message"], err3.(*Err).Message)
+		}
+
+		if fmt.Sprint(errs[1]["message"]) != err2.Error() {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[1]["message"], err2.Error())
+		}
+
+		if fmt.Sprint(errs[2]["message"]) != err1.(*Err).Message {
+			t.Errorf("unexpected error message, got %q, expected %q", errs[2]["message"], err1.(*Err).Message)
+		}
+	})
+}
