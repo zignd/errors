@@ -8,6 +8,37 @@ import (
 	"testing"
 )
 
+// CustomError is a custom error type composed with Err.
+type CustomError struct {
+	*Err
+}
+
+// NewCustomError returns a new CustomError and adds a stack trace.
+func NewCustomError(message string) error {
+	customError := CustomError{Err: &Err{Message: message}}
+	WithStack(customError.Err)
+	return customError
+}
+
+// CustomError2 is a custom error type composed with Err.
+type CustomError2 struct {
+	*Err
+}
+
+// NewCustom2Error returns a new CustomError2 and adds a cause to the error.
+func NewCustom2Error(message string, cause error) error {
+	customError2 := CustomError2{Err: &Err{Message: message}}
+	WithCause(customError2.Err, cause)
+	return customError2
+}
+
+// customError3 is a custom error type not composed with Err.
+type customError3 struct{}
+
+func (e customError3) Error() string {
+	return "this is a custom error type"
+}
+
 func TestNew(t *testing.T) {
 	msg := "error message"
 	if got := New(msg).Error(); got != msg {
@@ -30,7 +61,7 @@ func TestErrorc(t *testing.T) {
 	}
 
 	if e := err.(*Err); !reflect.DeepEqual(e.Data, data) {
-		t.Errorf(`wrong data, got %+v, expected %+v`, e.Data, data)
+		t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data)
 		return
 	}
 }
@@ -83,58 +114,70 @@ func TestWrapc(t *testing.T) {
 	}
 }
 
-// CustomError is a custom error type composed with Err.
-type CustomError struct {
-	*Err
-}
-
-// NewCustomError returns a new CustomError and adds a stack trace.
-func NewCustomError(message string) error {
-	customError := CustomError{Err: &Err{Message: message}}
-	WithStack(customError.Err)
-	return customError
-}
-
 func TestWithStack(t *testing.T) {
+	t.Parallel()
+
 	t.Run("when WithStack is provided with an error of type Err, it should add a stack trace to the error", func(t *testing.T) {
+		t.Parallel()
 		err := NewCustomError("this is a custom error type with stack")
 
 		if err.(CustomError).Stack == nil {
-			t.Errorf(`expected stack to be not nil, got nil`)
+			t.Fatal("expected stack to be not nil, got nil")
 			return
 		}
 
 		outputStr := fmt.Sprintf("%+v", err)
 		if !strings.Contains(outputStr, "message:") {
-			t.Errorf(`expected "message:" to be in the output string, got %v`, outputStr)
-			return
+			t.Errorf(`expected "message:" to be in the output string, got "%v"`, outputStr)
 		}
 		if !strings.Contains(outputStr, "stack:") {
-			t.Errorf(`expected "stack:" to be in the output string, got %v`, outputStr)
-			return
+			t.Errorf(`expected "stack:" to be in the output string, got "%v"`, outputStr)
 		}
 	})
 }
 
-// CustomError2 is a custom error type composed with Err.
-type CustomError2 struct {
-	*Err
-}
-
-// NewCustom2Error returns a new CustomError2 and adds a cause to the error.
-func NewCustom2Error(message string, cause error) error {
-	customError2 := CustomError2{Err: &Err{Message: message}}
-	WithCause(customError2.Err, cause)
-	return customError2
-}
-
 func TestWithCause(t *testing.T) {
+	t.Parallel()
+
 	t.Run("when WithCause is provided with an error and a cause, it should add the cause to the error", func(t *testing.T) {
+		t.Parallel()
+
 		causeErr := New("inner error")
 		err := NewCustom2Error("outer error", causeErr)
 
 		if err.(CustomError2).Cause != causeErr {
-			t.Errorf(`expected cause to be %v, got %v`, causeErr, err.(CustomError2).Cause)
+			t.Errorf(`expected cause to be "%v", got "%v"`, causeErr, err.(CustomError2).Cause)
+		}
+	})
+}
+
+func TestIsErrComposition(t *testing.T) {
+	t.Parallel()
+
+	t.Run("when a custom error type is composed with *Err, it should return true", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewCustomError("this is a custom error type with stack")
+		if !IsErrComposition(err) {
+			t.Errorf("expected IsErrComposition to return true, got false")
+		}
+	})
+
+	t.Run("when an error type is Pointer but the element type is a struct not composed with *Err, it should return false", func(t *testing.T) {
+		t.Parallel()
+
+		err := errors.New("this is a regular error")
+		if IsErrComposition(err) {
+			t.Errorf("expected IsErrComposition to return false, got true")
+		}
+	})
+
+	t.Run("when a custom error type is not composed with *Err, it should return false", func(t *testing.T) {
+		t.Parallel()
+
+		err := customError3{}
+		if IsErrComposition(err) {
+			t.Errorf("expected IsErrComposition to return false, got true")
 		}
 	})
 }
