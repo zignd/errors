@@ -97,69 +97,71 @@ func main() {
 Here's the execution of the example:
 
 ```
-$ go run examples/example1/example1.go
+$ go run examples/example1/example1.go 
 Error logged as a JSON structure using the JSON.MarshalIndent:
-{
-  "message": "failed to complete the transaction on bank_123456",
-  "data": {
-    "transactionId": "tx_123456",
-    "userId": "67890"
+[
+  {
+    "data": {
+      "transactionId": "tx_123456",
+      "userId": "67890"
+    },
+    "message": "failed to complete the transaction on bank_123456",
+    "stack": [
+      "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13",
+      "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+      "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+      "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+    ]
   },
-  "stack": [
-    "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13",
-    "main.main @ /root/hack/errors/examples/example1/example1.go:52",
-    "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
-    "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
-  ],
-  "cause": {
-    "message": "failed to update the database",
+  {
     "data": {
       "operation": "update",
       "tableName": "transactions"
     },
+    "message": "failed to update the database",
     "stack": [
       "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24",
       "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
       "main.main @ /root/hack/errors/examples/example1/example1.go:52",
       "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
       "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
-    ],
-    "cause": {
-      "message": "connection timeout",
-      "data": {
-        "server": "db-server-01",
-        "timeoutSeconds": 30
-      },
-      "stack": [
-        "main.createConnection @ /root/hack/errors/examples/example1/example1.go:35",
-        "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
-        "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
-        "main.main @ /root/hack/errors/examples/example1/example1.go:52",
-        "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
-        "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
-      ],
-      "cause": {
-        "message": "network instability detected",
-        "data": {
-          "network": "internal",
-          "severity": "high"
-        },
-        "stack": [
-          "main.open @ /root/hack/errors/examples/example1/example1.go:45",
-          "main.createConnection @ /root/hack/errors/examples/example1/example1.go:34",
-          "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
-          "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
-          "main.main @ /root/hack/errors/examples/example1/example1.go:52",
-          "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
-          "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
-        ]
-      }
-    }
+    ]
+  },
+  {
+    "data": {
+      "server": "db-server-01",
+      "timeoutSeconds": 30
+    },
+    "message": "connection timeout",
+    "stack": [
+      "main.createConnection @ /root/hack/errors/examples/example1/example1.go:35",
+      "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
+      "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
+      "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+      "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+      "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+    ]
+  },
+  {
+    "data": {
+      "network": "internal",
+      "severity": "high"
+    },
+    "message": "network instability detected",
+    "stack": [
+      "main.open @ /root/hack/errors/examples/example1/example1.go:45",
+      "main.createConnection @ /root/hack/errors/examples/example1/example1.go:34",
+      "main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23",
+      "main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12",
+      "main.main @ /root/hack/errors/examples/example1/example1.go:52",
+      "runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194",
+      "runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"
+    ]
   }
-}
+]
 
 Error logged as a JSON structure using the JSON.Marshal:
-{"message":"failed to complete the transaction on bank_123456","data":{"transactionId":"tx_123456","userId":"67890"},"stack":["main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"failed to update the database","data":{"operation":"update","tableName":"transactions"},"stack":["main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"connection timeout","data":{"server":"db-server-01","timeoutSeconds":30},"stack":["main.createConnection @ /root/hack/errors/examples/example1/example1.go:35","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"],"cause":{"message":"network instability detected","data":{"network":"internal","severity":"high"},"stack":["main.open @ /root/hack/errors/examples/example1/example1.go:45","main.createConnection @ /root/hack/errors/examples/example1/example1.go:34","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]}}}}
+[{"data":{"transactionId":"tx_123456","userId":"67890"},"message":"failed to complete the transaction on bank_123456","stack":["main.createTransaction @ /root/hack/errors/examples/example1/example1.go:13","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]},{"data":{"operation":"update","tableName":"transactions"},"message":"failed to update the database","stack":["main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:24","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]},{"data":{"server":"db-server-01","timeoutSeconds":30},"message":"connection timeout","stack":["main.createConnection @ /root/hack/errors/examples/example1/example1.go:35","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]},{"data":{"network":"internal","severity":"high"},"message":"network instability detected","stack":["main.open @ /root/hack/errors/examples/example1/example1.go:45","main.createConnection @ /root/hack/errors/examples/example1/example1.go:34","main.updateDatabase @ /root/hack/errors/examples/example1/example1.go:23","main.createTransaction @ /root/hack/errors/examples/example1/example1.go:12","main.main @ /root/hack/errors/examples/example1/example1.go:52","runtime/internal/atomic.(*Uint32).Load @ /root/go/version/go1.21.0/src/runtime/internal/atomic/types.go:194","runtime.goexit @ /root/go/version/go1.21.0/src/runtime/asm_amd64.s:1651"]}]
 
 Error logged using the s format specifier:
 failed to complete the transaction on bank_123456: failed to update the database: connection timeout: network instability detected
@@ -204,8 +206,8 @@ cause:
                         message:
                                 "network instability detected"
                         data:
-                                network: internal
                                 severity: high
+                                network: internal
                         stack:
                                 main.open @ /root/hack/errors/examples/example1/example1.go:45
                                 main.createConnection @ /root/hack/errors/examples/example1/example1.go:34
