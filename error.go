@@ -1,6 +1,9 @@
 package errors
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Err is the error struct used internally by the package. This type should only be used for type assertions.
 type Err struct {
@@ -31,28 +34,6 @@ func (e Err) Unwrap() error {
 	return e.Cause
 }
 
-// WithStack adds a stack trace to the provided error if it is an Err or *Err.
-func WithStack(err error) error {
-	if e, ok := err.(Err); ok {
-		e.Stack = callers()
-		return e
-	} else if e, ok := err.(*Err); ok {
-		e.Stack = callers()
-		return e
-	} else {
-		return err
-	}
-}
-
-// WithCause adds a cause to the provided error if it is an Err or *Err.
-func WithCause(err error, cause error) error {
-	if e, ok := err.(Err); ok {
-		e.Cause = cause
-		return e
-	} else if e, ok := err.(*Err); ok {
-		e.Cause = cause
-		return e
-	} else {
-		return err
-	}
+func (e *Err) MarshalJSON() ([]byte, error) {
+	return json.Marshal(toMapsSlice(e))
 }
