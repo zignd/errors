@@ -30,7 +30,9 @@ func toMapAndCause(err error) (map[string]any, error) {
 
 	if e, ok := err.(*Err); ok {
 		errMap["message"] = e.Message
-		errMap["data"] = e.Data
+		if e.Data != nil {
+			errMap["data"] = e.Data
+		}
 		errMap["stack"] = e.Stack
 		errCause = e.Cause
 	} else {

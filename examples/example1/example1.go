@@ -51,11 +51,11 @@ func open() error {
 func main() {
 	if err := createTransaction("tx_123456"); err != nil {
 		b, _ := json.MarshalIndent(err, "", "  ")
-		fmt.Println("Error logged as a JSON structure using the JSON.MarshalIndent:")
+		fmt.Println("Error logged as a JSON structure using the json.MarshalIndent:")
 		fmt.Printf("%s\n", b)
 
 		b, _ = json.Marshal(err)
-		fmt.Println("\nError logged as a JSON structure using the JSON.Marshal:")
+		fmt.Println("\nError logged as a JSON structure using the json.Marshal:")
 		fmt.Printf("%s\n", b)
 
 		fmt.Println("\nError logged using the s format specifier:")
