@@ -40,85 +40,105 @@ func (e customError3) Error() string {
 }
 
 func TestNew(t *testing.T) {
-	msg := "error message"
-	if got := New(msg).Error(); got != msg {
-		t.Errorf(`wrong error message, got "%v", expected "%v"`, got, msg)
-		return
-	}
+	t.Run("when New is provided with a message, it should create a new error with the message", func(t *testing.T) {
+		msg := "error message"
+		if got := New(msg).Error(); got != msg {
+			t.Errorf(`wrong error message, got "%v", expected "%v"`, got, msg)
+			return
+		}
+	})
 }
 
-func TestErrorc(t *testing.T) {
-	msg := "error message"
-	data := Data{
-		"id":          1,
-		"description": "fool",
-	}
+func TestErrord(t *testing.T) {
+	t.Run("when Errord is provided with a message and data, it should create a new error with the message and data", func(t *testing.T) {
+		msg := "error message"
+		data := Data{
+			"id":          1,
+			"description": "fool",
+		}
 
-	err := Errord(data, msg)
-	if got := err.Error(); got != msg {
-		t.Errorf(`wrong error message, got "%v", expected "%v"`, got, msg)
-		return
-	}
+		err := Errord(data, msg)
+		if got := err.Error(); got != msg {
+			t.Errorf(`wrong error message, got "%v", expected "%v"`, got, msg)
+			return
+		}
 
-	if e := err.(*Err); !reflect.DeepEqual(e.Data, data) {
-		t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data)
-		return
-	}
+		if e := err.(*Err); !reflect.DeepEqual(e.Data, data) {
+			t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data)
+			return
+		}
+	})
 }
 
 func TestWrap(t *testing.T) {
-	msg1 := "error message 1"
-	err1 := New(msg1)
-	msg2 := "error message 2"
-	err2 := Wrap(err1, msg2)
-	msg3 := "error message 3"
-	err3 := Wrap(err2, msg3)
-	got := err3.Error()
-	expected := fmt.Sprintf("%s: %s: %s", msg3, msg2, msg1)
-	if got != expected {
-		t.Errorf(`wrong error message, got "%s", expected "%s"`, got, expected)
-		return
-	}
+	t.Run("when Wrap is provided with an error and a message, it should create a new error with the message and the provided error as the cause", func(t *testing.T) {
+		msg1 := "error message 1"
+		err1 := New(msg1)
+		msg2 := "error message 2"
+		err2 := Wrap(err1, msg2)
+		msg3 := "error message 3"
+		err3 := Wrap(err2, msg3)
+		got := err3.Error()
+		expected := fmt.Sprintf("%s: %s: %s", msg3, msg2, msg1)
+		if got != expected {
+			t.Errorf(`wrong error message, got "%s", expected "%s"`, got, expected)
+			return
+		}
+	})
 }
 
 func TestWrapc(t *testing.T) {
-	msg1 := "error message 1"
-	err1 := errors.New(msg1)
+	t.Run("when Wrapd is provided with an error and data, it should add the data to the error", func(t *testing.T) {
+		msg1 := "error message 1"
+		err1 := errors.New(msg1)
 
-	msg2 := "error message 2"
-	data2 := Data{
-		"id":          2,
-		"description": "bar",
-	}
-	err2 := Wrapd(err1, data2, msg2)
+		msg2 := "error message 2"
+		data2 := Data{
+			"id":          2,
+			"description": "bar",
+		}
+		err2 := Wrapd(err1, data2, msg2)
 
-	msg3 := "error message 3"
-	data3 := Data{
-		"id":          3,
-		"description": "spam",
-	}
-	err3 := Wrapd(err2, data3, msg3)
+		msg3 := "error message 3"
+		data3 := Data{
+			"id":          3,
+			"description": "spam",
+		}
+		err3 := Wrapd(err2, data3, msg3)
 
-	msg4 := "error message 4"
-	data4 := Data{
-		"id":          4,
-		"description": "spam",
-	}
-	err4 := Wrapd(err3, data4, msg4)
+		msg4 := "error message 4"
+		data4 := Data{
+			"id":          4,
+			"description": "spam",
+		}
+		err4 := Wrapd(err3, data4, msg4)
 
-	got := err4.Error()
-	expected := fmt.Sprintf("%s: %s: %s: %s", msg4, msg3, msg2, msg1)
-	if got != expected {
-		t.Errorf(`wrong error message, got "%s", expected "%s"`, got, expected)
-		return
-	}
+		got := err4.Error()
+		expected := fmt.Sprintf("%s: %s: %s: %s", msg4, msg3, msg2, msg1)
+		if got != expected {
+			t.Errorf(`wrong error message, got "%s", expected "%s"`, got, expected)
+			return
+		}
+
+		if e := err4.(*Err); !reflect.DeepEqual(e.Data, data4) {
+			t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data4)
+			return
+		}
+
+		if e := err3.(*Err); !reflect.DeepEqual(e.Data, data3) {
+			t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data3)
+			return
+		}
+
+		if e := err2.(*Err); !reflect.DeepEqual(e.Data, data2) {
+			t.Errorf(`wrong data, got "%+v", expected "%+v"`, e.Data, data2)
+			return
+		}
+	})
 }
 
 func TestWithStack(t *testing.T) {
-	t.Parallel()
-
 	t.Run("when WithStack is provided with an error of type Err, it should add a stack trace to the error", func(t *testing.T) {
-		t.Parallel()
 		err := NewCustomError("this is a custom error type with stack")
 
 		if err.(CustomError).Stack == nil {
@@ -137,11 +157,7 @@ func TestWithStack(t *testing.T) {
 }
 
 func TestWithCause(t *testing.T) {
-	t.Parallel()
-
 	t.Run("when WithCause is provided with an error and a cause, it should add the cause to the error", func(t *testing.T) {
-		t.Parallel()
-
 		causeErr := New("inner error")
 		err := NewCustom2Error("outer error", causeErr)
 
@@ -152,11 +168,7 @@ func TestWithCause(t *testing.T) {
 }
 
 func TestIsErrComposition(t *testing.T) {
-	t.Parallel()
-
 	t.Run("when a custom error type is composed with *Err, it should return true", func(t *testing.T) {
-		t.Parallel()
-
 		err := NewCustomError("this is a custom error type with stack")
 		if !IsErrComposition(err) {
 			t.Errorf("expected IsErrComposition to return true, got false")
@@ -164,8 +176,6 @@ func TestIsErrComposition(t *testing.T) {
 	})
 
 	t.Run("when an error type is Pointer but the element type is a struct not composed with *Err, it should return false", func(t *testing.T) {
-		t.Parallel()
-
 		err := errors.New("this is a regular error")
 		if IsErrComposition(err) {
 			t.Errorf("expected IsErrComposition to return false, got true")
@@ -173,8 +183,6 @@ func TestIsErrComposition(t *testing.T) {
 	})
 
 	t.Run("when a custom error type is not composed with *Err, it should return false", func(t *testing.T) {
-		t.Parallel()
-
 		err := customError3{}
 		if IsErrComposition(err) {
 			t.Errorf("expected IsErrComposition to return false, got true")
