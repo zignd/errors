@@ -1,6 +1,9 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 type Data map[string]any
 
@@ -100,4 +103,29 @@ func WithCause(err error, cause error) error {
 	} else {
 		return err
 	}
+}
+
+// IsErrComposition returns true if the provided error is a composition of Err or *Err.
+func IsErrComposition(err error) bool {
+	typeOfErr := reflect.TypeOf(err)
+
+	if typeOfErr.Kind() == reflect.Pointer {
+		typeOfErr = typeOfErr.Elem()
+	}
+
+	if typeOfErr.Kind() != reflect.Struct {
+		return false
+	}
+
+	for i := 0; i < typeOfErr.NumField(); i++ {
+		if typeOfErr.Field(i).Type == reflect.TypeOf(Err{}) {
+			return true
+		}
+
+		if typeOfErr.Field(i).Type == reflect.TypeOf((*Err)(nil)) {
+			return true
+		}
+	}
+
+	return false
 }
