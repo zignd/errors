@@ -18,7 +18,7 @@ go get -u github.com/zignd/errors
 
 # Documentation
 
-For a better understanding of the features provided by the package check the documentation at: [godoc.org/github.com/zignd/errors](https://godoc.org/github.com/zignd/errors)
+For a better understanding of the features provided by the package check the documentation at: [pkg.go.dev/github.com/zignd/errors](https://pkg.go.dev/github.com/zignd/errors)
 
 # Quick demo
 
